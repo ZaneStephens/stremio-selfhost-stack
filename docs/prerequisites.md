@@ -8,18 +8,60 @@ This guide covers everything you need to prepare, with both **paid (highly recom
 
 ## 1. Server / Hosting Requirements
 
-The self-hosted stack runs via Docker. You will need a virtual private server (VPS) or a home server running Linux (Ubuntu 22.04/24.04 LTS is recommended) or Windows/macOS.
+The self-hosted stack runs via Docker. You will need a Virtual Private Server (VPS) or a home server running Linux (Ubuntu 22.04 or 24.04 LTS is highly recommended). 
 
-### Network & Ports
-Ensure the following ports are open on your hosting provider's firewall (e.g., Oracle Cloud Security List, AWS Security Group) and system firewall (e.g., `ufw`):
-*   **Port 80 (HTTP)**: Required by Nginx Proxy Manager (NPM) for Let's Encrypt SSL validation challenges.
-*   **Port 443 (HTTPS)**: For secure access to your public-facing apps.
-*   **Port 81 (HTTP)**: The Nginx Proxy Manager admin UI dashboard port (ensure this is either firewalled to just your IP or proxied securely).
+### ☁️ Free Route: Oracle Cloud "Always Free" VM Standard
+Oracle Cloud Infrastructure (OCI) offers an exceptionally generous **Always Free Tier** that is perfect for this stack. 
 
-### System Utilities
-Make sure the server has **Docker** and **Docker Compose (v2+)** installed. 
-*   On Ubuntu: `sudo apt install docker.io docker-compose-v2`
-*   Ensure your user is added to the docker group: `sudo useradd -aG docker $USER`
+#### **Step 1: Sign up for Oracle Cloud**
+1. Register for an account at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/). 
+2. Choose your **Home Region** carefully (this is where your server will be hosted; select a region close to you).
+
+#### **Step 2: Create your Always Free Server**
+1. In your OCI Console, navigate to **Compute** -> **Instances** -> **Create Instance**.
+2. **Image**: Click *Edit*, select **Canonical Ubuntu Linux** (version 22.04 or 24.04).
+3. **Shape**: Click *Edit* -> *Change Shape*. Select **Ampere (ARM-based)**. Select the **VM.Standard.A1.Flex** shape. 
+   * *Allocation*: Configure it with **4 OCPUs** and **24 GB of RAM** (fully "Always Free Eligible"!).
+4. **Networking**: Ensure "Assign a public IPv4 address" is checked.
+5. **SSH Keys**: Download/Save the private key (`.key`) file. You will need this to access your server!
+6. Click **Create** and wait for the status to show *Running*. Note your **Public IP Address**.
+
+#### **Step 3: Open the Oracle Cloud Firewall (VCN Ingress Rules)**
+By default, Oracle locks down your server. You must open it for web traffic:
+1. In your OCI Console on the instance page, click your **Subnet** name (under Primary VNIC details).
+2. Click your **Default Security List**.
+3. Click **Add Ingress Rules** and add the following two rules:
+   * **Rule 1 (HTTP/S Web Traffic)**:
+     * *Source CIDR*: `0.0.0.0/0`
+     * *IP Protocol*: `TCP`
+     * *Destination Port Range*: `80, 443`
+   * **Rule 2 (Portainer Web Panel)**:
+     * *Source CIDR*: `0.0.0.0/0` (or your-home-public-ip/32 to restrict access to just your home network).
+     * *IP Protocol*: `TCP`
+     * *Destination Port Range*: `9443`
+
+---
+
+### 🚀 One-Command Automated Server Setup (Bootstrap)
+Once you can SSH into your server, we have fully automated the installation of Docker, Portainer, and firewall rules.
+
+1. Connect to your VPS via SSH (replace with your private key path and IP address):
+   ```bash
+   ssh -i /path/to/ssh.key ubuntu@<your-vps-ip>
+   ```
+2. Run this single command to download and run our **[bootstrap-vps.sh](file:///c:/Users/mounc/OneDrive/Documents/Streamio%20build%20and%20research/scripts/bootstrap-vps.sh)** bootstrap script:
+   ```bash
+   curl -sSL https://raw.githubusercontent.com/ZaneStephens/stremio-selfhost-stack/main/scripts/bootstrap-vps.sh | sudo bash
+   ```
+
+#### **What this script automates for you:**
+* Updates Ubuntu package indices.
+* Installs standard dependencies (`curl`, `git`, `ufw`).
+* Installs **Docker Engine** using official Docker convenience scripts.
+* Adds your user (`ubuntu`) to the `docker` group so you don't have to prefix commands with `sudo`.
+* Sets up and starts **Portainer CE** (secured at `https://<your-vps-ip>:9443`).
+* Configures local Ubuntu firewall (`ufw`) to block everything except SSH, HTTP (80), HTTPS (443), and Portainer (9443, 8000).
+* Prepares the deployment directory `/opt/stremio-stack/data` with correct permissions.
 
 ---
 
