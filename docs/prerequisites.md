@@ -11,34 +11,67 @@ This guide covers everything you need to prepare, with both **paid (highly recom
 The self-hosted stack runs via Docker. You will need a Virtual Private Server (VPS) or a home server running Linux (Ubuntu 22.04 or 24.04 LTS is highly recommended). 
 
 ### ☁️ Free Route: Oracle Cloud "Always Free" VM Standard
-Oracle Cloud Infrastructure (OCI) offers an exceptionally generous **Always Free Tier** that is perfect for this stack. 
+Oracle Cloud Infrastructure (OCI) offers an exceptionally generous **Always Free Tier** that is perfect for this stack. Follow this exact order to avoid console glitches.
 
-#### **Step 1: Sign up for Oracle Cloud**
+---
+
+### **Step 1: Sign up for Oracle Cloud**
 1. Register for an account at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/). 
 2. Choose your **Home Region** carefully (this is where your server will be hosted; select a region close to you).
 
-#### **Step 2: Create your Always Free Server**
-1. In your OCI Console, navigate to **Compute** -> **Instances** -> **Create Instance**.
+---
+
+### **Step 2: Network Setup (Create VCN & Open Firewall) — Do This First!**
+Creating your network first using OCI's dedicated wizard is the cleanest, most reliable method and avoids server creation errors.
+
+1.  In your OCI Console, click the top-left menu icon (three lines) -> **Networking** -> **Virtual Cloud Networks**.
+2.  Click the big **[Start VCN Wizard]** button.
+3.  Select **"VCN with Internet Connectivity"** and click **Start VCN Wizard**.
+4.  Name the VCN `my-stremio-network` and click **Next** -> **Create**. (Oracle will build your VCN, subnets, and gateways in 5 seconds).
+5.  Click your newly created network `my-stremio-network` to open it.
+6.  Under **Resources** on the left menu, click **Security Lists**.
+7.  Click on the list named **"default security list for my-stremio-network"**.
+8.  Click the blue **[Add Ingress Rules]** button, and add your web rules:
+    *   **Rule 1 (HTTP & HTTPS Traffic)**:
+        *   *Source CIDR*: `0.0.0.0/0`
+        *   *IP Protocol*: `TCP`
+        *   *Destination Port Range*: `80, 443`
+    *   **Rule 2 (Portainer Web Panel)**:
+        *   *Source CIDR*: `0.0.0.0/0` (or `your-home-public-ip/32` for extra security)
+        *   *IP Protocol*: `TCP`
+        *   *Destination Port Range*: `9443`
+9.  Click **[Add Ingress Rules]** at the bottom to save.
+
+---
+
+### **Step 3: Create your Always Free Server**
+1. In the OCI Console, navigate to **Compute** -> **Instances** -> **Create Instance**.
 2. **Image**: Click *Edit*, select **Canonical Ubuntu Linux** (version 22.04 or 24.04).
 3. **Shape**: Click *Edit* -> *Change Shape*. Select **Ampere (ARM-based)**. Select the **VM.Standard.A1.Flex** shape. 
-   * *Allocation*: Configure it with **4 OCPUs** and **24 GB of RAM** (fully "Always Free Eligible"!).
-4. **Networking**: Ensure "Assign a public IPv4 address" is checked.
-5. **SSH Keys**: Download/Save the private key (`.key`) file. You will need this to access your server!
+   * *Allocation*: Configure it with **4 OCPUs** and **24 GB of RAM**. *(See Capacity Troubleshooting below if OCI throws an error here).*
+4. **Networking**: 
+   * Select **"Select existing virtual cloud network"** and choose `my-stremio-network`.
+   * Select **"Select existing subnet"** and choose `public subnet-my-stremio-network`.
+   * Under **Public IPv4 address assignment**, click the toggle for **"Automatically assign public IPv4 address"** to **ON** (turning it blue).
+5. **SSH Keys**: Click **"Download private key"** and save the `.key` file securely on your computer. You cannot log into your server without this!
 6. Click **Create** and wait for the status to show *Running*. Note your **Public IP Address**.
 
-#### **Step 3: Open the Oracle Cloud Firewall (VCN Ingress Rules)**
-By default, Oracle locks down your server. You must open it for web traffic:
-1. In your OCI Console on the instance page, click your **Subnet** name (under Primary VNIC details).
-2. Click your **Default Security List**.
-3. Click **Add Ingress Rules** and add the following two rules:
-   * **Rule 1 (HTTP/S Web Traffic)**:
-     * *Source CIDR*: `0.0.0.0/0`
-     * *IP Protocol*: `TCP`
-     * *Destination Port Range*: `80, 443`
-   * **Rule 2 (Portainer Web Panel)**:
-     * *Source CIDR*: `0.0.0.0/0` (or your-home-public-ip/32 to restrict access to just your home network).
-     * *IP Protocol*: `TCP`
-     * *Destination Port Range*: `9443`
+---
+
+### 🛑 Troubleshooting: Oracle "Out of Capacity" ARM Error
+Because the 4 vCPU / 24 GB RAM Ampere (ARM) shape is incredibly generous and popular, Oracle occasionally runs out of physical server capacity in certain regions. If you hit this error, try these fixes in order:
+
+1.  **Switch the Availability Domain (AD)**:
+    *   At the very top of the *Create Instance* page under **Placement**, click **Edit**.
+    *   Under **Availability Domain**, try switching from **AD-1** to **AD-2** or **AD-3** (if your home region has multiple ADs). Different server rooms often have capacity when others are full.
+2.  **Request a smaller ARM instance**:
+    *   You do not have to claim all 4 OCPUs and 24 GB RAM in one go. 
+    *   Try allocating **2 OCPUs and 12 GB of RAM** (or even **1 OCPU and 6 GB of RAM**, which is still incredibly fast and more than enough for this stack!). Smaller footprints are much easier for Oracle to fit into their servers.
+3.  **Fallback to Always Free AMD (Micro) Shape**:
+    *   If ARM is completely exhausted, switch the shape to **VM.Standard.E2.1.Micro** (1 vCPU, 1 GB RAM).
+    *   *Warning*: 1 GB of RAM is very tight for running all Stremio containers, NzbDav, Redis, and NPM simultaneously. If you choose this path, you must set up **swap space** (virtual memory) on your Linux OS to prevent containers from crashing.
+4.  **Use an automated OCI Instance Creator script**:
+    *   This is the standard community workaround. Since capacity changes minute-by-minute as other users delete their instances, you can use the OCI CLI or standard community scripts (like `oci-arm-creator` on GitHub) to continuously request your ARM instance every 30 seconds in the background until an allocation opens up.
 
 ---
 
