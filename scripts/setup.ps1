@@ -517,9 +517,11 @@ Write-SetupSummary -Path (Join-Path $RenderOutputDir "setup-summary.md") -Values
 Write-Host "Wrote $(Join-Path $RenderOutputDir 'setup-summary.md')" -ForegroundColor Green
 
 if ($deploymentMode -eq "ssh" -and -not $SkipDeploy) {
-    $deployArgs = @("-SshHost", $sshHost, "-User", $sshUser, "-RemoteDir", $remoteDir, "-SkipRender")
-    if ($sshKey.Length -gt 0) { $deployArgs += @("-SshKey", $sshKey) }
-    & "$PSScriptRoot\deploy-ssh.ps1" @deployArgs
+    if ($sshKey.Length -gt 0) {
+        & "$PSScriptRoot\deploy-ssh.ps1" -SshHost $sshHost -User $sshUser -RemoteDir $remoteDir -SshKey $sshKey -SkipRender
+    } else {
+        & "$PSScriptRoot\deploy-ssh.ps1" -SshHost $sshHost -User $sshUser -RemoteDir $remoteDir -SkipRender
+    }
 }
 elseif ($deploymentMode -eq "portainer") {
     Write-Host ""
