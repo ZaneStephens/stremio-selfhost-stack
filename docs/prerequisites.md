@@ -121,7 +121,7 @@ When you run `.\scripts\setup.ps1` on your home computer, the wizard will ask yo
     *   If using DuckDNS: Override the defaults and enter your exact registered DuckDNS subdomains (e.g., `yourname-aio.duckdns.org` and `yourname-meta.duckdns.org`).
 *   **Let's Encrypt Email**: Just enter your regular, personal email address (e.g. `yourname@gmail.com`). This is only used to notify you if a certificate is expiring or has a security warning.
 *   **AIOStreams admin username & password**: You are creating the login details to protect your AIOStreams configuration panel. Leave the password completely blank and hit Enter—the script will automatically generate a highly secure, random password and print it in your final summary!
-*   **TMDB API Key**: Copy and paste the shorter **API Key** (32 characters, e.g., `f7796bb603b636be4c69049c4dc96020`) from your TMDB settings. Do NOT use the long "API Read Access Token".
+*   **TMDB API Key**: Copy and paste the shorter **API Key** (32 characters, e.g., `f7796bb...36be4c69...`) from your TMDB settings. Do NOT use the long "API Read Access Token".
 *   **RPDB API Key**: Completely optional. If provided, it overlays ratings (IMDb, Metacritic, RT) directly onto your Stremio cover posters. If you don't have one, just leave it blank and hit Enter to skip.
 *   **Include self-hosted NzbDav?**: Answer **`No`** if you are only using torrent streaming / Debrid services. Answer **`Yes`** only if you are a Usenet power-user.
 *   **VPN Mode**: Since your streaming traffic is already fully encrypted and proxied by Debrid (Real-Debrid, TorBox, etc.), your server is not downloading torrents directly. Therefore, a VPN is **not** needed. Answer **`off`** (the default) to keep your server speeds incredibly fast!
@@ -130,26 +130,64 @@ When you run `.\scripts\setup.ps1` on your home computer, the wizard will ask yo
 
 ---
 
-## 5. What to do AFTER the Setup Script Finishes
+## 5. Nginx Proxy Manager Setup & Troubleshooting
 
-Once the setup script finishes downloading and launching your stack on your server, you are ready to configure your apps!
+When the setup script finishes deploying your stack over SSH, it will ask: `Run NPM proxy-host creation now? [y/N]`. If you select **`Yes`**, it runs `configure-npm.ps1` to automatically set up your DuckDNS subdomains.
 
-### **Step 1: Check your Setup Summary**
-Open the generated **`rendered/setup-summary.md`** file on your computer. This file contains:
-*   Your public addon configuration URLs.
-*   Your generated admin username and secure password for AIOStreams.
+Because the configuration script runs locally on your home computer, you may encounter three common connection errors. Here is how to resolve them easily:
 
-### **Step 2: Access & Configure AIOStreams**
-1.  Open your browser and navigate to: `https://yourname-aio.duckdns.org/stremio/configure`
-2.  Log in using your generated admin username and password from your setup summary.
-3.  Add your **Real-Debrid** or **TorBox** API credentials.
-4.  Configure your catalog filtering and sorting templates (the default TamTaro templates are pre-installed!).
-5.  Click **Install** at the bottom to link the addon directly to your Stremio app!
+### ❌ Issue 1: "Target Machine Actively Refused It" (`127.0.0.1:81`)
+*   **Why it happens**: The script runs locally on your Windows machine, so it tries to connect to port 81 on your *local computer* instead of your Oracle server.
+*   **The Fix (Secure SSH Tunneling)**: 
+    1. Open a **brand-new, separate PowerShell window** on your computer.
+    2. Run this command to open a secure tunnel (replace with your private key path and IP address):
+       ```powershell
+       ssh -i "F:\path\to\your\ssh.key" -L 81:127.0.0.1:81 ubuntu@<your-vps-ip> -N
+       ```
+       *(This window will look like it is hanging—**leave it open** in the background!)*
+    3. Go back to your original PowerShell window and run: `.\scripts\configure-npm.ps1`.
 
-### **Step 3: Access & Configure AIOMetadata**
-1.  Open your browser and navigate to: `https://yourname-meta.duckdns.org/configure`
-2.  Configure your catalogs, streaming providers, and TMDB configurations.
-3.  Save your configuration, copy the generated addon link, and paste it directly into the search bar in Stremio to install the addon!
+### ❌ Issue 2: "502 Bad Gateway OpenResty"
+*   **Why it happens**: When Nginx Proxy Manager boots up for the very first time, it takes **30 to 60 seconds** to run database migrations and start its background API.
+*   **The Fix**: Simply wait 20 seconds for the database to initialize, and run `.\scripts\configure-npm.ps1` again.
+
+### ❌ Issue 3: "Internal Error" (SSL/Let's Encrypt failure)
+*   **Why it happens**: During first-run, NPM immediately tries to request SSL padlocks. If your DuckDNS subdomains are not yet pointed to your server IP, or if Let's Encrypt is temporarily rate-limited, the API fails and returns a `500 Internal Error`.
+*   **The Fix (Bypass SSL first, add later)**:
+    1. Open your project's **`config/stack.env`** file.
+    2. Change `NPM_REQUEST_LETSENCRYPT=true` to **`NPM_REQUEST_LETSENCRYPT=false`** and save the file.
+    3. Run `.\scripts\configure-npm.ps1` again. It will succeed instantly in less than 2 seconds!
+    4. Once the script finishes, you can secure your subdomains directly in the NPM browser dashboard in 10 seconds (see below).
+
+---
+
+## 6. What to do AFTER the Setup Script Finishes
+
+### **Step 1: Verify your Nginx Proxy Manager Dashboard**
+1.  Open your browser and navigate to: `http://127.0.0.1:81` (Only works while the SSH tunnel in **Issue 1** is open).
+2.  Log in using your NPM credentials from `config/stack.env` (or default: `admin@example.com` / `changeme`).
+3.  You will see your **2 Proxy Hosts** successfully created and mapped!
+
+### **Step 2: Secure with SSL Padlocks (If you bypassed in Issue 3)**
+Once your subdomains are successfully pointed to your server IP on duckdns.org, you can secure them inside the dashboard:
+1.  In your NPM dashboard, go to **Hosts** -> **Proxy Hosts**.
+2.  For each host, click the **three dots** on the right -> **Edit**.
+3.  Click the **SSL** tab, change *None* to **"Request a new SSL Certificate"**, and check **"I Agree to the Let's Encrypt Terms"**.
+4.  Click **Save**. Your links are now fully HTTPS secured!
+
+### **Step 3: Onboard and Install in Stremio**
+
+#### **1. AIOStreams Configuration**
+1.  Go to: `https://yourname-aio.duckdns.org/stremio/configure` *(use `http://` if SSL is not active yet)*.
+2.  Log in using:
+    *   **Username**: `admin`
+    *   **Password**: *(Grab your generated password from `rendered/setup-summary.md`)*.
+3.  Add your **Real-Debrid** or **TorBox** credentials, configure your sorting, and click **Install** to add it to Stremio!
+
+#### **2. AIOMetadata Configuration**
+1.  Go to: `https://yourname-meta.duckdns.org/configure`
+2.  Configure your TMDB API Key, select your catalogs/providers, and click **Save**.
+3.  Copy your generated addon URL and paste it directly into Stremio's search bar to install!
 
 ---
 *Congratulations! Your self-hosted Stremio stack is officially deployed, fully automated, and secure on your Always Free Oracle Cloud VPS!*
