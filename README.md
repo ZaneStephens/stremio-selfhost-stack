@@ -5,6 +5,14 @@ This repo builds a deployment kit for a self-hosted AIOStreams + AIOMetadata sta
 The quickest path:
 
 ```powershell
+.\scripts\setup.ps1
+```
+
+The setup wizard walks through domains, API keys, optional NzbDav, optional Gluetun, Nginx Proxy Manager, and deployment mode. It prints docs links as it goes and writes a redacted summary to `rendered/setup-summary.md`.
+
+For a manual setup path:
+
+```powershell
 .\scripts\new-config.ps1 -BaseDomain example.com -Email you@example.com -EnableNzbDav -VpnMode http-proxy
 notepad .\config\stack.env
 .\scripts\render-stack.ps1
@@ -17,6 +25,12 @@ Then either:
 ```
 
 or upload/copy `rendered/docker-compose.yml` into Portainer as a stack.
+
+Linux/macOS users can run the same workflow with PowerShell:
+
+```bash
+pwsh ./scripts/setup.ps1
+```
 
 Read [docs/runbook.md](docs/runbook.md) for the full process.
 

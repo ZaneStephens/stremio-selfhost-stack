@@ -1,6 +1,42 @@
 # Runbook
 
-## 1. Create The Config
+## 1. Guided Setup
+
+The recommended path is the Windows-friendly setup wizard:
+
+```powershell
+.\scripts\setup.ps1
+```
+
+The wizard:
+
+- asks for domains and public URLs,
+- generates secrets,
+- captures API keys,
+- lets you include or skip NzbDav,
+- lets you choose Gluetun off, HTTP proxy, or hybrid mode,
+- handles existing or included Nginx Proxy Manager,
+- renders `rendered/docker-compose.yml`,
+- optionally deploys over SSH,
+- writes `rendered/setup-summary.md`.
+
+It prints docs links in the terminal before the stages where you may need outside guidance.
+
+PowerShell on Linux/macOS works too:
+
+```bash
+pwsh ./scripts/setup.ps1
+```
+
+For unattended or repeatable setup, create an answers JSON file and run:
+
+```powershell
+.\scripts\setup.ps1 -NonInteractive -AnswersPath .\answers.json -Force
+```
+
+The non-interactive keys match the prompts used by the wizard. See [tests/test-setup.ps1](../tests/test-setup.ps1) for a minimal example.
+
+## 2. Manual Config Creation
 
 ```powershell
 .\scripts\new-config.ps1 -BaseDomain example.com -Email you@example.com -EnableNzbDav -VpnMode http-proxy
@@ -15,7 +51,7 @@ Fill in at least:
 - `AIOSTREAMS_AUTH_USER`
 - VPN values if `VPN_MODE` is not `off`
 
-## 2. Render
+## 3. Render
 
 ```powershell
 .\scripts\render-stack.ps1
@@ -27,7 +63,7 @@ Outputs:
 - `rendered/proxy-hosts.json`
 - `rendered/next-steps.md`
 
-## 3. Portainer Deployment
+## 4. Portainer Deployment
 
 1. Open Portainer.
 2. Go to Stacks, Add stack.
@@ -37,7 +73,7 @@ Outputs:
 
 If using an existing Nginx Proxy Manager container, make sure it is attached to the same Docker network as the stack. The SSH deploy script can do this automatically with `NPM_CONTAINER_NAME`.
 
-## 4. SSH Deployment
+## 5. SSH Deployment
 
 ```powershell
 .\scripts\deploy-ssh.ps1 -Host oracle.example.com -User ubuntu
@@ -58,7 +94,7 @@ The script:
 - optionally attaches an existing NPM container,
 - runs `docker compose up -d`.
 
-## 5. Configure Nginx Proxy Manager
+## 6. Configure Nginx Proxy Manager
 
 If you supplied NPM credentials in `config/stack.env`, run:
 
@@ -76,7 +112,7 @@ The script creates missing proxy hosts only. Existing domains are skipped so it 
 
 For Let's Encrypt, DNS must already point to the VPS and ports 80/443 must reach NPM.
 
-## 6. First App Setup
+## 7. First App Setup
 
 AIOStreams:
 
@@ -101,7 +137,7 @@ NzbDav:
 
 For `VPN_MODE=hybrid`, use `http://gluetun:3000` as the internal NzbDav URL from AIOStreams.
 
-## 7. Check Health
+## 8. Check Health
 
 ```powershell
 .\scripts\check-remote.ps1 -Host oracle.example.com -User ubuntu
@@ -109,7 +145,7 @@ For `VPN_MODE=hybrid`, use `http://gluetun:3000` as the internal NzbDav URL from
 
 The script prints Docker service state and tries configured public health endpoints.
 
-## 8. Back Up Before Updates
+## 9. Back Up Before Updates
 
 ```powershell
 .\scripts\backup-remote.ps1 -Host oracle.example.com -User ubuntu
@@ -117,7 +153,7 @@ The script prints Docker service state and tries configured public health endpoi
 
 This creates a tarball on the remote host and downloads it into `backups/`.
 
-## 9. Update
+## 10. Update
 
 ```powershell
 .\scripts\backup-remote.ps1 -Host oracle.example.com -User ubuntu
