@@ -21,14 +21,18 @@ $script:Answers = $null
 function New-HexSecret {
     param([int]$Bytes = 32)
     $buffer = [byte[]]::new($Bytes)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($buffer)
+    $rng.Dispose()
     return ($buffer | ForEach-Object { $_.ToString("x2") }) -join ""
 }
 
 function New-Password {
     param([int]$Bytes = 18)
     $buffer = [byte[]]::new($Bytes)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($buffer)
+    $rng.Dispose()
     return [Convert]::ToBase64String($buffer).TrimEnd("=").Replace("+", "x").Replace("/", "y")
 }
 
@@ -312,7 +316,18 @@ $current = Read-DotEnvMap $basePath
 Show-Stage "Stremio Self-Hosted Stack Setup"
 Write-Host "This wizard writes $ConfigPath, renders Docker Compose, and can optionally deploy over SSH."
 Write-Host "Secrets are stored in $ConfigPath, which is gitignored by this repo."
+Show-Link "Prerequisites Guide" "docs/prerequisites.md"
 Show-Link "Runbook" "https://github.com/ZaneStephens/stremio-selfhost-stack/blob/main/docs/runbook.md"
+
+$hasPrereqs = Ask-YesNo "readPrerequisites" "Have you read the prerequisites in docs/prerequisites.md and configured your domain/DNS/server?" $true
+if (-not $hasPrereqs) {
+    Write-Host ""
+    Write-Host "Please complete the prerequisites before running this setup." -ForegroundColor Yellow
+    Write-Host "Read the guide here: docs/prerequisites.md" -ForegroundColor Cyan
+    Write-Host "Exiting setup."
+    return
+}
+
 
 Show-Stage "Domain and URLs"
 Show-Link "Nginx Proxy Manager setup" "https://nginxproxymanager.com/setup/"

@@ -2,6 +2,14 @@
 
 This repo builds a deployment kit for a self-hosted AIOStreams + AIOMetadata stack, with optional NzbDav, Gluetun, Nginx Proxy Manager automation, Portainer deployment, and direct SSH deployment.
 
+## 📋 Prerequisites
+
+Before running the setup, you must have a domain name, proper DNS routing, and a server prepared. 
+
+Please read the detailed **[Prerequisites Guide](docs/prerequisites.md)** first.
+
+## 🚀 Quick Start
+
 The quickest path:
 
 ```powershell

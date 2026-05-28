@@ -19,6 +19,7 @@ try {
     $renderDir = Join-Path $tmp "rendered"
 
     @{
+        readPrerequisites = $true
         publicScheme = "https"
         baseDomain = "example.test"
         letsEncryptEmail = "admin@example.test"

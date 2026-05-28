@@ -16,14 +16,18 @@ $ErrorActionPreference = "Stop"
 function New-HexSecret {
     param([int]$Bytes = 32)
     $buffer = [byte[]]::new($Bytes)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($buffer)
+    $rng.Dispose()
     return ($buffer | ForEach-Object { $_.ToString("x2") }) -join ""
 }
 
 function New-Password {
     param([int]$Bytes = 18)
     $buffer = [byte[]]::new($Bytes)
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($buffer)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $rng.GetBytes($buffer)
+    $rng.Dispose()
     return [Convert]::ToBase64String($buffer).TrimEnd("=").Replace("+", "x").Replace("/", "y")
 }
 

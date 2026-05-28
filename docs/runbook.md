@@ -1,5 +1,11 @@
 # Runbook
 
+## 0. Prerequisites
+
+Before running the setup wizard or configuring files, ensure your server, domain name routing, and API keys are ready. 
+
+Please read and follow the **[Prerequisites Guide](prerequisites.md)** first.
+
 ## 1. Guided Setup
 
 The recommended path is the Windows-friendly setup wizard:
