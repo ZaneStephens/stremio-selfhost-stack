@@ -67,11 +67,11 @@ Because the 4 vCPU / 24 GB RAM Ampere (ARM) shape is incredibly generous and pop
 2.  **Request a smaller ARM instance**:
     *   You do not have to claim all 4 OCPUs and 24 GB RAM in one go. 
     *   Try allocating **2 OCPUs and 12 GB of RAM** (or even **1 OCPU and 6 GB of RAM**, which is still incredibly fast and more than enough for this stack!). Smaller footprints are much easier for Oracle to fit into their servers.
-3.  **Fallback to Always Free AMD (Micro) Shape**:
-    *   If ARM is completely exhausted, switch the shape to **VM.Standard.E2.1.Micro** (1 vCPU, 1 GB RAM).
-    *   *Warning*: 1 GB of RAM is very tight for running all Stremio containers, NzbDav, Redis, and NPM simultaneously. If you choose this path, you must set up **swap space** (virtual memory) on your Linux OS to prevent containers from crashing.
-4.  **Use an automated OCI Instance Creator script**:
-    *   This is the standard community workaround. Since capacity changes minute-by-minute as other users delete their instances, you can use the OCI CLI or standard community scripts (like `oci-arm-creator` on GitHub) to continuously request your ARM instance every 30 seconds in the background until an allocation opens up.
+3.  **Fallback to Always Free AMD (Micro) Shape (Immediate Allocation)**:
+    *   If ARM is completely exhausted and you want to deploy *today*, switch the shape to **VM.Standard.E2.1.Micro** (1 vCPU, 1 GB RAM). This shape almost always has immediate capacity in every region!
+    *   *Virtual Memory (Swap Space) Integration*: While 1 GB of RAM is very tight for running all Stremio containers, Redis, NzbDav, and NPM together, **our automated bootstrap script (`bootstrap-vps.sh`) automatically detects if your server has less than 2 GB of RAM and automatically configures a 4 GB swap file on your hard drive!** This prevents your database/containers from ever crashing due to memory limits, making the 1 GB server incredibly stable.
+4.  **Use an automated OCI Capacity Grabber script (To get the ARM shape later)**:
+    *   This is the standard community workaround. Since capacity changes minute-by-minute as other users delete their instances, you can use the OCI CLI or standard community scripts (such as `oci-arm-creator` on GitHub) to continuously request your ARM instance every 30 seconds in the background from your local machine until an allocation opens up.
 
 ### 🚀 Automated Server Setup & Docker Auto-Installation
 We have fully automated the installation of Docker, Portainer CE, folders, permissions, and local firewalls. You can choose either the **Zero-Touch** cloud-init method during server creation, or the **One-Command SSH** method.

@@ -30,6 +30,22 @@ else
 fi
 REAL_HOME=$(eval echo "~$REAL_USER")
 
+# Detect total system RAM and auto-create swap if under 2GB (critical for 1GB AMD Always Free Micro VMs)
+TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
+if [ "$TOTAL_MEM" -lt 2000 ]; then
+  echo -e "${YELLOW}Low memory detected (${TOTAL_MEM}MB). Auto-configuring 4GB swap space...${NC}"
+  if [ ! -f /swapfile ]; then
+    fallocate -l 4G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+    echo -e "${GREEN}4GB Swap file created and enabled.${NC}"
+  else
+    echo -e "${GREEN}Swap file already exists. Skipping...${NC}"
+  fi
+fi
+
 echo -e "${CYAN}[1/5] Updating system packages...${NC}"
 apt-get update -y
 apt-get upgrade -y
