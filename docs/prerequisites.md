@@ -73,28 +73,51 @@ Because the 4 vCPU / 24 GB RAM Ampere (ARM) shape is incredibly generous and pop
 4.  **Use an automated OCI Instance Creator script**:
     *   This is the standard community workaround. Since capacity changes minute-by-minute as other users delete their instances, you can use the OCI CLI or standard community scripts (like `oci-arm-creator` on GitHub) to continuously request your ARM instance every 30 seconds in the background until an allocation opens up.
 
+### 🚀 Automated Server Setup & Docker Auto-Installation
+We have fully automated the installation of Docker, Portainer CE, folders, permissions, and local firewalls. You can choose either the **Zero-Touch** cloud-init method during server creation, or the **One-Command SSH** method.
+
 ---
 
-### 🚀 One-Command Automated Server Setup (Bootstrap)
-Once you can SSH into your server, we have fully automated the installation of Docker, Portainer, and firewall rules.
+#### **⚡ Option A: Zero-Touch Setup via "Initialization Script" (Highly Recommended)**
+You can instruct Oracle to run our auto-install script the very first moment the server boots up! You won't even need to SSH in to do the setup.
 
-1. Connect to your VPS via SSH (replace with your private key path and IP address):
-   ```bash
-   ssh -i /path/to/ssh.key ubuntu@<your-vps-ip>
-   ```
-2. Run this single command to download and run our **[bootstrap-vps.sh](file:///c:/Users/mounc/OneDrive/Documents/Streamio%20build%20and%20research/scripts/bootstrap-vps.sh)** bootstrap script:
-   ```bash
-   curl -sSL https://raw.githubusercontent.com/ZaneStephens/stremio-selfhost-stack/main/scripts/bootstrap-vps.sh | sudo bash
-   ```
+1.  Before clicking **Create** on your OCI server page, scroll to the very bottom and expand **Advanced options**.
+2.  In the **Initialization script** section, select **Paste XML/Text** (or select *Upload*).
+3.  Copy and paste this exact **2-line script** into the box:
+    ```bash
+    #!/bin/bash
+    curl -sSL https://raw.githubusercontent.com/ZaneStephens/stremio-selfhost-stack/main/scripts/bootstrap-vps.sh | bash
+    ```
+4.  Click **Create Instance**. Once your server status turns green (Running), wait **60–90 seconds** for the script to finish executing in the background.
+5.  Open your browser and navigate directly to:
+    ```text
+    https://<your-vps-ip>:9443
+    ```
+    *(Accept the self-signed SSL certificate warning on first load. Your Portainer CE web console is live and ready!)*
 
-#### **What this script automates for you:**
-* Updates Ubuntu package indices.
-* Installs standard dependencies (`curl`, `git`, `ufw`).
-* Installs **Docker Engine** using official Docker convenience scripts.
-* Adds your user (`ubuntu`) to the `docker` group so you don't have to prefix commands with `sudo`.
-* Sets up and starts **Portainer CE** (secured at `https://<your-vps-ip>:9443`).
-* Configures local Ubuntu firewall (`ufw`) to block everything except SSH, HTTP (80), HTTPS (443), and Portainer (9443, 8000).
-* Prepares the deployment directory `/opt/stremio-stack/data` with correct permissions.
+---
+
+#### **💻 Option B: One-Command SSH Setup**
+If you prefer to connect and watch the installation run in real-time:
+
+1.  Connect to your VPS via SSH (replace with your private key path and IP address):
+    ```bash
+    ssh -i /path/to/ssh.key ubuntu@<your-vps-ip>
+    ```
+2.  Run this single command to download and execute our bootstrap script:
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/ZaneStephens/stremio-selfhost-stack/main/scripts/bootstrap-vps.sh | sudo bash
+    ```
+
+---
+
+#### **What these setup methods automatically automate for you:**
+*   Updates Ubuntu package indices and dependencies.
+*   Installs **Docker Engine** using official Docker convenience scripts.
+*   Adds the default `ubuntu` SSH user to the `docker` group so you can manage containers without `sudo`.
+*   Sets up and starts **Portainer CE** (secured at `https://<your-vps-ip>:9443`).
+*   Configures local Ubuntu firewall (`ufw`) to block all incoming traffic except **SSH**, **HTTP (80)**, **HTTPS (443)**, and **Portainer (9443, 8000)**.
+*   Prepares the deployment directory `/opt/stremio-stack/data` with correct permissions.
 
 ---
 

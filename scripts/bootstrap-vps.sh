@@ -22,8 +22,12 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Detect actual user if run under sudo
-REAL_USER=${SUDO_USER:-$USER}
+# Detect actual user (supports standard Ubuntu/Oracle cloud-init VM environments)
+if id "ubuntu" &>/dev/null; then
+  REAL_USER="ubuntu"
+else
+  REAL_USER=${SUDO_USER:-$USER}
+fi
 REAL_HOME=$(eval echo "~$REAL_USER")
 
 echo -e "${CYAN}[1/5] Updating system packages...${NC}"
