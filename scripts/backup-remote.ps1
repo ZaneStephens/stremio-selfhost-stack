@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][string]$Host,
+    [Parameter(Mandatory=$true)][string]$SshHost,
     [string]$User = "ubuntu",
     [string]$RemoteDir = "/opt/stremio-stack",
     [string]$RemoteDataDir = "/opt/stremio-stack/data",
@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 New-Item -ItemType Directory -Force -Path $LocalBackupDir | Out-Null
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $remoteTar = "/tmp/stremio-stack-backup-$stamp.tgz"
-$target = "$User@$Host"
+$target = "$User@$SshHost"
 $sshArgs = @()
 $scpArgs = @()
 if ($SshKey) {

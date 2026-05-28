@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][string]$Host,
+    [Parameter(Mandatory=$true)][string]$SshHost,
     [string]$User = "ubuntu",
     [string]$RemoteDir = "/opt/stremio-stack",
     [string]$SshKey = "",
@@ -19,7 +19,7 @@ if (-not (Test-Path -LiteralPath $composePath)) {
     throw "Missing $composePath. Run .\scripts\render-stack.ps1 first."
 }
 
-$sshTarget = "$User@$Host"
+$sshTarget = "$User@$SshHost"
 $sshArgs = @()
 $scpArgs = @()
 if ($SshKey) {

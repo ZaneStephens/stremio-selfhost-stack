@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)][string]$Host,
+    [Parameter(Mandatory=$true)][string]$SshHost,
     [string]$User = "ubuntu",
     [string]$RemoteDir = "/opt/stremio-stack",
     [string]$SshKey = ""
@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $sshArgs = @()
 if ($SshKey) { $sshArgs += @("-i", $SshKey) }
-$target = "$User@$Host"
+$target = "$User@$SshHost"
 
 & ssh @sshArgs $target "cd '$RemoteDir' && docker compose ps && echo '--- logs last 40 ---' && docker compose logs --tail=40"
 if ($LASTEXITCODE -ne 0) { throw "Remote docker compose check failed." }

@@ -517,7 +517,7 @@ Write-SetupSummary -Path (Join-Path $RenderOutputDir "setup-summary.md") -Values
 Write-Host "Wrote $(Join-Path $RenderOutputDir 'setup-summary.md')" -ForegroundColor Green
 
 if ($deploymentMode -eq "ssh" -and -not $SkipDeploy) {
-    $deployArgs = @("-Host", $sshHost, "-User", $sshUser, "-RemoteDir", $remoteDir, "-SkipRender")
+    $deployArgs = @("-SshHost", $sshHost, "-User", $sshUser, "-RemoteDir", $remoteDir, "-SkipRender")
     if ($sshKey.Length -gt 0) { $deployArgs += @("-SshKey", $sshKey) }
     & "$PSScriptRoot\deploy-ssh.ps1" @deployArgs
 }
